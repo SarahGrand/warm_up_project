@@ -1,0 +1,22 @@
+CREATE DATABASE api_data;
+
+CREATE TABLE tlv_weather (
+    query_time timestamp,
+    response_time int,
+    temp float
+);
+
+CREATE TABLE history_facts (
+    query_time timestamp,
+    response_time int,
+    event_description varchar(1000),
+    year int
+);
+
+CREATE TABLE space_imgs (
+    query_time timestamp,
+    response_time int,
+    img_title varchar(500),
+    img_url varchar(500),
+    img_explanation varchar(2500)
+);
