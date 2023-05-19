@@ -17,6 +17,10 @@ CREATE TABLE space_imgs (
     query_time timestamp,
     response_time int,
     img_title varchar(500),
-    img_url varchar(500),
-    img_explanation varchar(2500)
+    img_url varchar(500)
 );
+
+sample inserts:
+INSERT INTO tlv_weather VALUES ('20230518 06:15:03 PM', 301, 68.95);
+INSERT INTO history_facts VALUES ('20230518 06:15:00 PM', 462, 'Description of historical event', 1989);
+INSERT INTO space_imgs VALUES ('20230518 06:15:00 PM', 112, 'Image title', 'www.nasa/image');
