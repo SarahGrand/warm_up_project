@@ -2,9 +2,11 @@ import asyncio
 from tornado.httpclient import AsyncHTTPClient
 from tornado.web import RequestHandler, Application
 from tornado.escape import json_decode
+import json
 import datetime
 from time import perf_counter
 import psycopg2
+import os
 
 class MainHandler(RequestHandler):
     def initialize(self):
@@ -44,17 +46,46 @@ class MainHandler(RequestHandler):
         self.db.commit()
 
         # render html template with info fetched from APIs
-        self.render("template.html", title="Sarah's Web App", temp=weather_json["currentConditions"]["temp"],
-                    year=history_json["events"][-1]["year"], fun_fact=history_json["events"][-1]["text"],
-                    space_img_title=space_json["title"], space_img_url=space_json["url"])
+        # self.render("template.html", title="Sarah's Web App", temp=weather_json["currentConditions"]["temp"],
+        #             year=history_json["events"][-1]["year"], fun_fact=history_json["events"][-1]["text"],
+        #             space_img_title=space_json["title"], space_img_url=space_json["url"])
+
+        # store fetched API data in JSON format that can be parsed by JS files
+        results_json = json.dumps({
+            "time": datetime_str,
+            "tlv_weather": {
+                "response_time": weather_response_time,
+                "temp": weather_json["currentConditions"]["temp"]
+            },
+            "history_facts": {
+                "response_time": history_response_time,
+                "fact": history_json["events"][-1]["text"],
+                "year": history_json["events"][-1]["year"]
+            },
+            "space_imgs": {
+                "response_time": space_response_time,
+                "img_title": space_json["title"],
+                "img_url": space_json["url"]
+            }
+        })
+        # self.render("template_with_react.html", results=results_json)
+        self.write(results_json)
         
     def on_finish(self):
         self.db.close()
 
+    def set_default_headers(self):
+        self.set_header("Access-Control-Allow-Origin", "*")
+
+    def options(self):
+        self.set_status(204)
+        self.finish()
+
 def make_app():
-    return Application([
-        (r"/", MainHandler)
-    ])
+    return Application(
+        [(r"/", MainHandler)],
+        static_path=os.path.join(os.path.dirname(__file__), "static")
+    )
 
 async def main():
     app = make_app()

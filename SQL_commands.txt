@@ -1,18 +1,16 @@
+Queries to set up the database and tables:
 CREATE DATABASE api_data;
-
 CREATE TABLE tlv_weather (
     query_time timestamp,
     response_time int,
     temp float
 );
-
 CREATE TABLE history_facts (
     query_time timestamp,
     response_time int,
     event_description varchar(1000),
     year int
 );
-
 CREATE TABLE space_imgs (
     query_time timestamp,
     response_time int,
@@ -20,7 +18,10 @@ CREATE TABLE space_imgs (
     img_url varchar(500)
 );
 
-sample inserts:
-INSERT INTO tlv_weather VALUES ('20230518 06:15:03 PM', 301, 68.95);
-INSERT INTO history_facts VALUES ('20230518 06:15:00 PM', 462, 'Description of historical event', 1989);
-INSERT INTO space_imgs VALUES ('20230518 06:15:00 PM', 112, 'Image title', 'www.nasa/image');
+Sample insert statements:
+INSERT INTO tlv_weather VALUES ('20230518 06:15:03 PM', 300, 68.9);
+INSERT INTO history_facts VALUES ('20230518 06:15:00 PM', 300, 'Description of historical event', 1989);
+INSERT INTO space_imgs VALUES ('20230518 06:15:00 PM', 300, 'Image title', 'www.nasa/image');
+
+To get most recent entry into a table:
+SELECT * FROM [table_name] ORDER BY query_time DESC LIMIT 1;

@@ -2,3 +2,9 @@ Sarah Grand
 5/17/2023
 
 Warm up project for VOOM internship
+
+Run backend with:
+    python main.py
+
+Run frontend with:
+    (in frontend directory) npm start
