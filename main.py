@@ -18,10 +18,13 @@ class MainHandler(RequestHandler):
 
         # fetch current TLV weather data from VisualCrossing API
         start = perf_counter()
-        weather_response = await http.fetch("https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/tel%20aviv/today?unitGroup=us&elements=temp&include=current&key=8JGLTFXE5KMTAPEGXU5TU5V6P&contentType=json")
+        # weather_response = await http.fetch("https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/tel%20aviv/today?unitGroup=us&elements=temp&include=current&key=8JGLTFXE5KMTAPEGXU5TU5V6P&contentType=json")
+        weather_response = await http.fetch("https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/tel%20aviv/today?unitGroup=us&elements=temp%2Chumidity%2Cwindspeedmean%2Cvisibility&include=current&key=8JGLTFXE5KMTAPEGXU5TU5V6P&contentType=json")
         end = perf_counter()
         weather_response_time = int(1000 * (end - start))
         weather_json = json_decode(weather_response.body)
+
+        print(weather_json)
 
         # fetch fun fact about today in history from Wikimedia API
         start = perf_counter()
@@ -37,25 +40,27 @@ class MainHandler(RequestHandler):
         space_response_time = int(1000 * (end - start))
         space_json = json_decode(space_response.body)
 
-        # record API data in the api_data database in tables corresponding to each API
+        # format datetime for SQL format and replace ' with '' for SQL text insertions
         datetime_str = time.strftime('%Y%m%d %I:%M:%S %p')
-        cursor = self.db.cursor()
-        cursor.execute(f'INSERT INTO tlv_weather VALUES (\'{datetime_str}\', {weather_response_time}, {weather_json["currentConditions"]["temp"]});')
-        cursor.execute(f'INSERT INTO history_facts VALUES (\'{datetime_str}\', {history_response_time}, \'{history_json["events"][-1]["text"]}\', {history_json["events"][-1]["year"]});')
-        cursor.execute(f'INSERT INTO space_imgs VALUES (\'{datetime_str}\', {space_response_time}, \'{space_json["title"]}\', \'{space_json["url"]}\');')
-        self.db.commit()
+        img_title = space_json["title"].replace('\'', '\'\'')
+        history_fact_text = history_json["events"][-1]["text"].replace('\'', '\'\'')
 
-        # render html template with info fetched from APIs
-        # self.render("template.html", title="Sarah's Web App", temp=weather_json["currentConditions"]["temp"],
-        #             year=history_json["events"][-1]["year"], fun_fact=history_json["events"][-1]["text"],
-        #             space_img_title=space_json["title"], space_img_url=space_json["url"])
+        # record API data in the api_data database in tables corresponding to each API
+        cursor = self.db.cursor()
+        cursor.execute(f'INSERT INTO tlv_weather VALUES (\'{datetime_str}\', {weather_response_time}, {weather_json["currentConditions"]["temp"]}, {weather_json["currentConditions"]["humidity"]}, {weather_json["days"][0]["windspeedmean"]}, {weather_json["currentConditions"]["visibility"]});')
+        cursor.execute(f'INSERT INTO history_facts VALUES (\'{datetime_str}\', {history_response_time}, \'{history_fact_text}\', {history_json["events"][-1]["year"]});')
+        cursor.execute(f'INSERT INTO space_imgs VALUES (\'{datetime_str}\', {space_response_time}, \'{img_title}\', \'{space_json["url"]}\');')
+        self.db.commit()
 
         # store fetched API data in JSON format that can be parsed by JS files
         results_json = json.dumps({
-            "time": datetime_str,
+            "time": time.strftime('%m/%d/%Y %I:%M:%S %p'),
             "tlv_weather": {
                 "response_time": weather_response_time,
-                "temp": weather_json["currentConditions"]["temp"]
+                "temp": weather_json["currentConditions"]["temp"],
+                "humidity": weather_json["currentConditions"]["humidity"],
+                "windspeed": weather_json["days"][0]["windspeedmean"],
+                "visibility": weather_json["currentConditions"]["visibility"],
             },
             "history_facts": {
                 "response_time": history_response_time,
@@ -68,18 +73,16 @@ class MainHandler(RequestHandler):
                 "img_url": space_json["url"]
             }
         })
-        # self.render("template_with_react.html", results=results_json)
+        
+        # output results_json with the saved API data
         self.write(results_json)
         
     def on_finish(self):
         self.db.close()
 
     def set_default_headers(self):
+        # allows backend to be queried by frontend
         self.set_header("Access-Control-Allow-Origin", "*")
-
-    def options(self):
-        self.set_status(204)
-        self.finish()
 
 def make_app():
     return Application(
