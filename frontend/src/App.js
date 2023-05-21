@@ -11,7 +11,6 @@ function App() {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        // TODO make this async
         axios.get(baseURL).then((response) => {
             setPost(response.data);
         }).catch(error => {
